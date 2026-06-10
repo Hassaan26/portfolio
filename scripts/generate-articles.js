@@ -80,30 +80,51 @@ Requirements:
   console.log('Calling Gemini API for article generation...');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseMimeType: 'application/json'
+  const maxRetries = 3;
+  let delay = 2000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        const isTransient = [429, 500, 502, 503, 504].includes(response.status);
+        if (isTransient && attempt < maxRetries) {
+          console.warn(`Gemini API returned status ${response.status} (attempt ${attempt}/${maxRetries}). Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+          continue;
+        }
+        throw new Error(`Gemini API error (${response.status}): ${errText}`);
       }
-    })
-  });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errText}`);
+      const result = await response.json();
+      const textResponse = result.candidates[0].content.parts[0].text;
+      
+      // Parse the JSON output from the model
+      const generatedData = JSON.parse(textResponse);
+      return generatedData;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      console.warn(`Connection error on attempt ${attempt}/${maxRetries}: ${error.message}. Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2;
+    }
   }
-
-  const result = await response.json();
-  const textResponse = result.candidates[0].content.parts[0].text;
-  
-  // Parse the JSON output from the model
-  const generatedData = JSON.parse(textResponse);
-  return generatedData;
 }
 
 async function main() {
