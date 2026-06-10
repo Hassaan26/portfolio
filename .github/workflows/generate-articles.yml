@@ -22,10 +22,15 @@ jobs:
         with:
           node-version: 20
 
-      - name: Generate New Article
+      - name: Generate and Publish New Article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: node scripts/generate-articles.js
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+          PORTFOLIO_URL: ${{ secrets.PORTFOLIO_URL }}
+        run: |
+          node scripts/generate-articles.js
+          node scripts/post-to-linkedin.js
 
       - name: Commit and Push Changes
         run: |
