@@ -10,17 +10,39 @@ async function getTrendingTopics() {
     const topStoriesRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
     const storyIds = await topStoriesRes.json();
     
-    // Fetch titles of the top 8 stories
+    // Fetch titles of the top 30 stories to look for AI/Tech related themes
+    const techKeywords = [
+      'ai', 'llm', 'rag', 'openai', 'gemini', 'claude', 'machine learning', 'deep learning',
+      'neural', 'gpt', 'gpu', 'vector', 'agent', 'transformer', 'tpu', 'nvidia', 'prompt engineering',
+      'copilot', 'nlp', 'robot', 'llms', 'artificial intelligence', 'h100', 'b200', 'data pipeline',
+      'vector database', 'chromadb', 'pgvector', 'pinecone', 'milvus', 'langchain', 'llamaindex'
+    ];
+    
+    const storiesToFetch = Math.min(storyIds.length, 30);
     const topTitles = [];
-    for (let i = 0; i < Math.min(storyIds.length, 8); i++) {
+    const aiTitles = [];
+    
+    for (let i = 0; i < storiesToFetch; i++) {
       const storyRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${storyIds[i]}.json`);
       const story = await storyRes.json();
       if (story && story.title) {
-        topTitles.push(story.title);
+        const titleLower = story.title.toLowerCase();
+        const matchesKeyword = techKeywords.some(keyword => titleLower.includes(keyword));
+        
+        if (matchesKeyword) {
+          aiTitles.push(story.title);
+        } else {
+          topTitles.push(story.title);
+        }
       }
     }
-    console.log('Trending Topics Found:', topTitles);
-    return topTitles;
+    
+    // Merge prioritizing AI/tech topics first, then general topics if we don't have enough
+    const mergedTopics = [...aiTitles, ...topTitles].slice(0, 10);
+    console.log('Trending AI/Tech Topics Found:', aiTitles);
+    console.log('Other Trending Topics Found:', topTitles);
+    console.log('Selected Topics for Prompt:', mergedTopics);
+    return mergedTopics;
   } catch (error) {
     console.error('Error fetching trending topics:', error);
     return ['AI pipelines', 'Scalable Backend architectures', 'Big Data Orchestration'];
@@ -32,23 +54,27 @@ async function generateArticle(trends) {
     throw new Error('GEMINI_API_KEY environment variable is not defined!');
   }
 
-  const prompt = `You are Hassaan Riaz, an experienced Staff Software Consultant and Full Stack Engineer with 10+ years of experience in Python (Django/FastAPI), Scala (AWS Glue/EMR pipelines), and AI/RAG architectures.
+  const prompt = `You are Hassaan Riaz, an experienced Staff Software Consultant, Backend Architect, and Generative AI developer with 10+ years of experience in Python (Django/FastAPI), Scala (AWS Glue/EMR pipelines), and AI/RAG architectures.
 
 Based on these current trending tech topics:
 ${trends.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}
 
-Select the single most relevant topic for a backend system architect, data engineer, or generative AI developer. Write a highly detailed, educational, and engaging article about it.
+Select the single most relevant topic for a backend system architect or generative AI developer, focusing STRICTLY on the AI, Large Language Models (LLMs), Retrieval-Augmented Generation (RAG), Agentic Systems, AI Pipelines, or related cutting-edge engineering space.
+If none of the trending topics fit this space, ignore them and select a current hot concept in the AI/LLM engineering space (e.g., GraphRAG, Agentic flow routing, Vector DB optimization, evaluation frameworks like Ragas, multi-modal pipelines) to write about.
+
+Write a highly detailed, educational, and engaging technical article about it.
 
 Requirements:
-1. Tone should be professional, experienced, and highly technical yet clear.
-2. The content must include markdown sections (headings, bullet points, and code snippet block if appropriate).
+1. Tone should be professional, authoritative, and technical yet clear.
+2. The content must include markdown sections (headings, bullet points, and a code snippet block if appropriate).
 3. The content body should be 400 to 500 words.
 4. Output should be formatted as a single JSON object (with NO markdown code wrapping around it) containing:
    - title: Title of the article.
    - snippet: 1-2 sentence summary.
-   - category: One of "AI & RAG", "Data Engineering", "Backend Architecture", or "Full Stack".
+   - category: Must be "AI & RAG".
    - readTime: Estimated read time (e.g., "5 min read").
    - content: The full body text of the article in Markdown format (with escaped newlines).
+   - linkedinSummary: An array of exactly 3 to 4 bullet points representing high-value technical learning takeaways/insights from the article. Each takeaway should be concise, educational, and professionally written, suitable to share directly on LinkedIn for educational value (do not include hashtags, markdown formatting, or URLs in these takeaways).
    - date: Today's date in YYYY-MM-DD format.`;
 
   console.log('Calling Gemini API for article generation...');

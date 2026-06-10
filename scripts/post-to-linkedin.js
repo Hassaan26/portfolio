@@ -28,6 +28,15 @@ async function postToLinkedIn() {
     const latestArticle = articles[0];
     console.log(`Preparing to share latest article to LinkedIn: "${latestArticle.title}"`);
 
+    // Build educational takeaway-style commentary
+    let postCommentary = `💡 Key Takeaways: ${latestArticle.title}\n\n`;
+    if (Array.isArray(latestArticle.linkedinSummary) && latestArticle.linkedinSummary.length > 0) {
+      postCommentary += latestArticle.linkedinSummary.map(point => `• ${point}`).join('\n');
+    } else {
+      postCommentary += `"${latestArticle.snippet}"`;
+    }
+    postCommentary += `\n\nRead the full technical breakdown on my portfolio:\n🔗 ${PORTFOLIO_URL}/#articles\n\n#AI #LLMs #RAG #SoftwareEngineering #BackendArchitect`;
+
     // Prepare payload for LinkedIn UGC Post API
     const sharePayload = {
       author: LINKEDIN_PERSON_URN,
@@ -35,7 +44,7 @@ async function postToLinkedIn() {
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
           shareCommentary: {
-            text: `📝 New Article: ${latestArticle.title}\n\n"${latestArticle.snippet}"\n\nRead the full technical analysis on my portfolio website:\n🔗 ${PORTFOLIO_URL}/#articles\n\n#AI #DataEngineering #SoftwareEngineering #CloudArchitecture`
+            text: postCommentary
           },
           shareMediaCategory: 'ARTICLE',
           media: [
