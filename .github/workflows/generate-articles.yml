@@ -1,50 +1,37 @@
 name: Generate Biweekly Portfolio Articles
 on:
   schedule:
-      # Runs every 14 days at midnight UTC
-          - cron: '0 0 */14 * *'
-            workflow_dispatch:
-                # Allows manual triggering from GitHub actions tab
-                jobs:
-                  generate-and-commit:
-                      runs-on: ubuntu-latest
-                          permissions:
-                                contents: write # Crucial to allow committing changes back to repo
-                                    steps:
-                                          - name: Checkout Repository
-                                                  uses: actions/checkout@v4
-                                                        - name: Set up Node.js
-                                                                uses: actions/setup-node@v4
-                                                                        with:
-                                                                                  node-version: 20
-                                                                                        - name: Debug LinkedIn URN
-                                                                                                env:
-                                                                                                          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-                                                                                                                  run: |
-                                                                                                                            node -e "
-                                                                                                                                        fetch('https://api.linkedin.com/v2/me', {
-                                                                                                                                                      headers: { Authorization: 'Bearer ' + process.env.LINKEDIN_ACCESS_TOKEN }
-                                                                                                                                                                  })
-                                                                                                                                                                              .then(r => r.json())
-                                                                                                                                                                                          .then(d => {
-                                                                                                                                                                                                        console.log('ID length:', d.id ? d.id.length : 0);
-                                                                                                                                                                                                                      console.log('ID characters separated:', d.id ? d.id.split('').join(' ') : 'undefined');
-                                                                                                                                                                                                                                  })
-                                                                                                                                                                                                                                              .catch(e => console.error(e))
-                                                                                                                                                                                                                                                        "
-                                                                                                                                                                                                                                                              - name: Generate and Publish New Article
-                                                                                                                                                                                                                                                                      env:
-                                                                                                                                                                                                                                                                                GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-                                                                                                                                                                                                                                                                                          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-                                                                                                                                                                                                                                                                                                    LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
-                                                                                                                                                                                                                                                                                                              PORTFOLIO_URL: ${{ secrets.PORTFOLIO_URL }}
-                                                                                                                                                                                                                                                                                                                      run: |
-                                                                                                                                                                                                                                                                                                                                node scripts/generate-articles.js
-                                                                                                                                                                                                                                                                                                                                          node scripts/post-to-linkedin.js
-                                                                                                                                                                                                                                                                                                                                                - name: Commit and Push Changes
-                                                                                                                                                                                                                                                                                                                                                        run: |
-                                                                                                                                                                                                                                                                                                                                                                  git config --global user.name 'github-actions[bot]'
-                                                                                                                                                                                                                                                                                                                                                                            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                                                                                                                                                                                                                                                                                                                                                                                      git add src/data/articles.json
-                                                                                                                                                                                                                                                                                                                                                                                                git diff --quiet && git diff --staged --quiet || (git commit -m 'chore: auto-generate biweekly article' && git pull --rebase origin main && git push)
-                                                                                                                                                                                                                                                                                                                                                                                                
+      - cron: '0 0 */14 * *'
+        workflow_dispatch:
+        jobs:
+          generate-and-commit:
+              runs-on: ubuntu-latest
+                  permissions:
+                        contents: write
+                            steps:
+                                  - name: Checkout Repository
+                                          uses: actions/checkout@v4
+                                                - name: Set up Node.js
+                                                        uses: actions/setup-node@v4
+                                                                with:
+                                                                          node-version: 20
+                                                                                - name: Debug LinkedIn URN
+                                                                                        env:
+                                                                                                  LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+                                                                                                          run: node scripts/debug-linkedin.js
+                                                                                                                - name: Generate and Publish New Article
+                                                                                                                        env:
+                                                                                                                                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+                                                                                                                                            LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+                                                                                                                                                      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+                                                                                                                                                                PORTFOLIO_URL: ${{ secrets.PORTFOLIO_URL }}
+                                                                                                                                                                        run: |
+                                                                                                                                                                                  node scripts/generate-articles.js
+                                                                                                                                                                                            node scripts/post-to-linkedin.js
+                                                                                                                                                                                                  - name: Commit and Push Changes
+                                                                                                                                                                                                          run: |
+                                                                                                                                                                                                                    git config --global user.name 'github-actions[bot]'
+                                                                                                                                                                                                                              git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+                                                                                                                                                                                                                                        git add src/data/articles.json
+                                                                                                                                                                                                                                                  git diff --quiet && git diff --staged --quiet || (git commit -m 'chore: auto-generate biweekly article' && git pull --rebase origin main && git push)
+                                                                                                                                                                                                                                                  
