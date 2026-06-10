@@ -93,7 +93,23 @@ Requirements:
             parts: [{ text: prompt }]
           }],
           generationConfig: {
-            responseMimeType: 'application/json'
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                snippet: { type: 'string' },
+                category: { type: 'string' },
+                readTime: { type: 'string' },
+                content: { type: 'string' },
+                linkedinSummary: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                date: { type: 'string' }
+              },
+              required: ['title', 'snippet', 'category', 'readTime', 'content', 'linkedinSummary', 'date']
+            }
           }
         })
       });
@@ -113,9 +129,15 @@ Requirements:
       const result = await response.json();
       const textResponse = result.candidates[0].content.parts[0].text;
       
-      // Parse the JSON output from the model
-      const generatedData = JSON.parse(textResponse);
-      return generatedData;
+      // Parse the JSON output from the model with raw logging on failure
+      try {
+        const generatedData = JSON.parse(textResponse);
+        return generatedData;
+      } catch (parseError) {
+        console.error('Failed to parse Gemini response as JSON. Raw output:');
+        console.error(textResponse);
+        throw parseError;
+      }
     } catch (error) {
       if (attempt === maxRetries) {
         throw error;
