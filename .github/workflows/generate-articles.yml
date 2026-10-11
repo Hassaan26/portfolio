@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '0 0 1,15 * *'
   workflow_dispatch:
+    inputs:
+      post_only:
+        description: 'Skip article generation and only share the latest article on LinkedIn'
+        type: boolean
+        default: false
 
 jobs:
   generate-and-commit:
@@ -19,11 +24,13 @@ jobs:
           node-version: 20
 
       - name: Generate New Article
+        if: ${{ !inputs.post_only }}
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node scripts/generate-articles.js
 
       - name: Commit and Push Changes
+        if: ${{ !inputs.post_only }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -33,6 +40,5 @@ jobs:
       - name: Share on LinkedIn
         env:
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
           PORTFOLIO_URL: ${{ secrets.PORTFOLIO_URL }}
         run: node scripts/post-to-linkedin.js

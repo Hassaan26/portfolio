@@ -3,16 +3,32 @@ import path from 'path';
 
 const ARTICLES_PATH = path.resolve('src/data/articles.json');
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
-const LINKEDIN_PERSON_URN = process.env.LINKEDIN_PERSON_URN; // Format: urn:li:person:XXXXXXXXXX
 const PORTFOLIO_URL = process.env.PORTFOLIO_URL || 'https://hassaan-portfolio.vercel.app'; // Fallback link
 
+// Resolve the author URN from the token itself so it always matches the token's owner.
+// Requires the token to include the `openid` and `profile` scopes.
+async function getAuthorUrn() {
+  const response = await fetch('https://api.linkedin.com/v2/userinfo', {
+    headers: { 'Authorization': `Bearer ${LINKEDIN_ACCESS_TOKEN}` }
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Could not resolve LinkedIn member from token (${response.status}): ${errText}. ` +
+      'Make sure the token was generated with the openid, profile and w_member_social scopes.');
+  }
+  const { sub } = await response.json();
+  return `urn:li:person:${sub}`;
+}
+
 async function postToLinkedIn() {
-  if (!LINKEDIN_ACCESS_TOKEN || !LINKEDIN_PERSON_URN) {
-    console.error('LINKEDIN_ACCESS_TOKEN or LINKEDIN_PERSON_URN is not configured.');
+  if (!LINKEDIN_ACCESS_TOKEN) {
+    console.error('LINKEDIN_ACCESS_TOKEN is not configured.');
     process.exit(1);
   }
 
   try {
+    const authorUrn = await getAuthorUrn();
+
     // Read the latest article (first index)
     if (!fs.existsSync(ARTICLES_PATH)) {
       console.error('No articles database found. Skipping share.');
@@ -39,7 +55,7 @@ async function postToLinkedIn() {
 
     // Prepare payload for LinkedIn UGC Post API
     const sharePayload = {
-      author: LINKEDIN_PERSON_URN,
+      author: authorUrn,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
