@@ -165,6 +165,10 @@ async function main() {
     const nextId = articles.length > 0 ? Math.max(...articles.map(a => a.id || 0)) + 1 : 1;
     newArticle.id = nextId;
 
+    // Set metadata here rather than trusting the model (it hallucinates dates)
+    newArticle.date = new Date().toISOString().slice(0, 10);
+    newArticle.category = 'AI & RAG';
+
     // Prepends to list
     articles.unshift(newArticle);
 

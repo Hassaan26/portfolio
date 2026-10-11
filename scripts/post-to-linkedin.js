@@ -8,8 +8,8 @@ const PORTFOLIO_URL = process.env.PORTFOLIO_URL || 'https://hassaan-portfolio.ve
 
 async function postToLinkedIn() {
   if (!LINKEDIN_ACCESS_TOKEN || !LINKEDIN_PERSON_URN) {
-    console.log('LinkedIn credentials not fully configured. Skipping LinkedIn share step.');
-    return;
+    console.error('LINKEDIN_ACCESS_TOKEN or LINKEDIN_PERSON_URN is not configured.');
+    process.exit(1);
   }
 
   try {
@@ -86,6 +86,7 @@ async function postToLinkedIn() {
     console.log('Successfully posted to LinkedIn! Post ID:', result.id);
   } catch (error) {
     console.error('Failed to publish article on LinkedIn:', error);
+    process.exit(1);
   }
 }
 
