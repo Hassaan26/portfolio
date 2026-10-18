@@ -1,9 +1,22 @@
 import fs from 'fs';
 import path from 'path';
+import { formatPost } from './format-post.js';
 
-const ARTICLES_PATH = path.resolve('src/data/articles.json');
+const VISUALS_PATH = path.resolve('src/data/visuals.json');
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
-const PORTFOLIO_URL = process.env.PORTFOLIO_URL || 'https://hassaan-portfolio.vercel.app'; // Fallback link
+
+const linkedInHeaders = {
+  'Authorization': `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+  'Content-Type': 'application/json',
+  'X-Restli-Protocol-Version': '2.0.0'
+};
+
+async function checkResponse(response, action) {
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`LinkedIn ${action} failed (${response.status}): ${errText}`);
+  }
+}
 
 // Resolve the author URN from the token itself so it always matches the token's owner.
 // Requires the token to include the `openid` and `profile` scopes.
@@ -20,6 +33,34 @@ async function getAuthorUrn() {
   return `urn:li:person:${sub}`;
 }
 
+// Registers an image upload with LinkedIn, uploads the PNG and returns the asset URN
+async function uploadImage(authorUrn, imagePath) {
+  const registerResponse = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+    method: 'POST',
+    headers: linkedInHeaders,
+    body: JSON.stringify({
+      registerUploadRequest: {
+        recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+        owner: authorUrn,
+        serviceRelationships: [{ relationshipType: 'OWNER', identifier: 'urn:li:userGeneratedContent' }]
+      }
+    })
+  });
+  await checkResponse(registerResponse, 'image upload registration');
+
+  const { value } = await registerResponse.json();
+  const uploadUrl = value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${LINKEDIN_ACCESS_TOKEN}`, 'Content-Type': 'image/png' },
+    body: fs.readFileSync(imagePath)
+  });
+  await checkResponse(uploadResponse, 'image upload');
+
+  return value.asset;
+}
+
 async function postToLinkedIn() {
   if (!LINKEDIN_ACCESS_TOKEN) {
     console.error('LINKEDIN_ACCESS_TOKEN is not configured.');
@@ -27,52 +68,35 @@ async function postToLinkedIn() {
   }
 
   try {
+    const visuals = fs.existsSync(VISUALS_PATH) ? JSON.parse(fs.readFileSync(VISUALS_PATH, 'utf-8') || '[]') : [];
+    if (visuals.length === 0) {
+      throw new Error('No visuals available to share.');
+    }
+
+    const latest = visuals[0];
+    const imagePath = path.resolve('public', latest.image.replace(/^\//, ''));
+    console.log(`Preparing to share "${latest.title}" (${imagePath})`);
+
     const authorUrn = await getAuthorUrn();
 
-    // Read the latest article (first index)
-    if (!fs.existsSync(ARTICLES_PATH)) {
-      console.error('No articles database found. Skipping share.');
-      return;
-    }
+    console.log('Uploading image to LinkedIn...');
+    const assetUrn = await uploadImage(authorUrn, imagePath);
 
-    const articles = JSON.parse(fs.readFileSync(ARTICLES_PATH, 'utf-8') || '[]');
-    if (articles.length === 0) {
-      console.error('No articles available to share.');
-      return;
-    }
+    const postCommentary = formatPost(latest);
 
-    const latestArticle = articles[0];
-    console.log(`Preparing to share latest article to LinkedIn: "${latestArticle.title}"`);
-
-    // Build educational takeaway-style commentary
-    let postCommentary = `💡 Key Takeaways: ${latestArticle.title}\n\n`;
-    if (Array.isArray(latestArticle.linkedinSummary) && latestArticle.linkedinSummary.length > 0) {
-      postCommentary += latestArticle.linkedinSummary.map(point => `• ${point}`).join('\n');
-    } else {
-      postCommentary += `"${latestArticle.snippet}"`;
-    }
-    postCommentary += `\n\nRead the full technical breakdown on my portfolio:\n🔗 ${PORTFOLIO_URL}/#articles\n\n#AI #LLMs #RAG #SoftwareEngineering #BackendArchitect`;
-
-    // Prepare payload for LinkedIn UGC Post API
     const sharePayload = {
       author: authorUrn,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
-          shareCommentary: {
-            text: postCommentary
-          },
-          shareMediaCategory: 'ARTICLE',
+          shareCommentary: { text: postCommentary },
+          shareMediaCategory: 'IMAGE',
           media: [
             {
               status: 'READY',
-              description: {
-                text: latestArticle.snippet
-              },
-              originalUrl: `${PORTFOLIO_URL}/#articles`,
-              title: {
-                text: latestArticle.title
-              }
+              media: assetUrn,
+              title: { text: latest.title },
+              description: { text: latest.subtitle }
             }
           ]
         }
@@ -82,26 +106,18 @@ async function postToLinkedIn() {
       }
     };
 
-    console.log('Sending API request to LinkedIn...');
+    console.log('Creating LinkedIn post...');
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-        'X-Restli-Protocol-Version': '2.0.0'
-      },
+      headers: linkedInHeaders,
       body: JSON.stringify(sharePayload)
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`LinkedIn API returned error (${response.status}): ${errText}`);
-    }
+    await checkResponse(response, 'post creation');
 
     const result = await response.json();
     console.log('Successfully posted to LinkedIn! Post ID:', result.id);
   } catch (error) {
-    console.error('Failed to publish article on LinkedIn:', error);
+    console.error('Failed to publish visual on LinkedIn:', error);
     process.exit(1);
   }
 }

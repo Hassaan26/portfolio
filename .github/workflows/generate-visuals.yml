@@ -1,0 +1,77 @@
+name: Generate Biweekly System Design Visual
+on:
+  schedule:
+    - cron: '0 0 1,15 * *'
+  workflow_dispatch:
+    inputs:
+      post_only:
+        description: 'Skip generation and only share the latest visual on LinkedIn'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Generate the image only (no commit, no LinkedIn post); download it from the run artifacts'
+        type: boolean
+        default: false
+      theme:
+        description: 'Experience theme to use (blank = automatic rotation)'
+        type: choice
+        default: ''
+        options:
+          - ''
+          - rag
+          - agents
+          - spark-etl
+          - data-integrity
+          - backend-apis
+          - refactoring
+          - testing
+          - remote-delivery
+
+jobs:
+  generate-and-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Renderer (Playwright + Chromium)
+        if: ${{ !inputs.post_only }}
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Generate New Visual
+        if: ${{ !inputs.post_only }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          THEME: ${{ inputs.theme }}
+        run: node scripts/generate-visual.js
+
+      - name: Upload Preview Image
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-preview
+          path: public/visuals/*.png
+
+      - name: Commit and Push Changes
+        if: ${{ !inputs.post_only && !inputs.dry_run }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add src/data/visuals.json public/visuals
+          git diff --staged --quiet || (git commit -m 'chore: auto-generate biweekly system design visual' && git pull --rebase origin main && git push)
+
+      - name: Share on LinkedIn
+        if: ${{ !inputs.dry_run }}
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        run: node scripts/post-to-linkedin.js

@@ -1,39 +1,51 @@
-.articles-grid {
+.visuals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
 }
 
-.article-card {
+.visual-card {
   display: flex;
   flex-direction: column;
   height: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
 
-.article-meta {
+.visual-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.visual-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 4px;
   font-size: 0.8rem;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
-.article-card-title {
+.visual-card-title {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: white;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.4;
 }
 
-.article-snippet {
+.visual-subtitle {
   color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
-  margin-bottom: 24px;
-  flex-grow: 1;
 }
 
 /* Modal Overlay */
@@ -128,56 +140,33 @@
   scrollbar-width: thin;
 }
 
-/* Markdown parsing rendering styles */
-.md-content h3 {
-  font-family: var(--font-heading);
-  font-size: 1.35rem;
-  color: white;
-  margin-top: 28px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
-}
-
-.md-content p {
-  margin-bottom: 18px;
-  color: var(--text-secondary);
-}
-
-.md-content ul {
-  list-style: disc;
-  margin-left: 20px;
-  margin-bottom: 20px;
-}
-
-.md-content li {
-  margin-bottom: 8px;
-  color: var(--text-secondary);
-}
-
-.md-content code {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--accent);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.9em;
-}
-
-.md-content pre {
-  background: rgba(7, 8, 13, 0.6);
+.visual-full {
+  width: 100%;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  overflow-x: auto;
   margin-bottom: 24px;
 }
 
-.md-content pre code {
-  background: none;
-  color: #a8cfef;
-  padding: 0;
-  font-size: 0.88rem;
+.visual-context {
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.visual-points {
+  list-style: disc;
+  margin-left: 20px;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+.visual-points li {
+  margin-bottom: 8px;
+}
+
+.visual-takeaway {
+  color: white;
+  font-weight: 600;
 }
 
 /* Responsive */

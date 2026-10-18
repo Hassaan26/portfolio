@@ -13,7 +13,7 @@ export default function Header() {
     { id: 'experience', label: 'Experience' },
     { id: 'projects', label: 'Projects' },
     { id: 'skills', label: 'Skills' },
-    { id: 'articles', label: 'Articles' },
+    { id: 'visuals', label: 'Visuals' },
     { id: 'contact', label: 'Contact' },
   ];
 

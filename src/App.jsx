@@ -4,7 +4,7 @@ import About from './components/About';
 import Experience from './components/Experience';
 import Projects from './components/Projects';
 import Skills from './components/Skills';
-import Articles from './components/Articles';
+import Visuals from './components/Visuals';
 import Contact from './components/Contact';
 import AIChatbot from './components/AIChatbot';
 
@@ -27,7 +27,7 @@ export default function App() {
         <Experience />
         <Projects />
         <Skills />
-        <Articles />
+        <Visuals />
         <Contact />
       </main>
 
