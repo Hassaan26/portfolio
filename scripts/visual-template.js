@@ -8,9 +8,6 @@ export const SEGMENT_KINDS = ['run', 'wait', 'idle'];
 export const CANVAS_WIDTH = 1080;
 export const CANVAS_HEIGHT = 1350;
 
-const AUTHOR = 'Hassaan Riaz';
-const AUTHOR_ROLE = 'Staff Software Consultant · Backend & AI';
-
 const ACCENTS = ['#818cf8', '#2dd4bf', '#c084fc', '#f472b6'];
 
 // Lucide-style icon paths for architecture nodes
@@ -185,9 +182,6 @@ export function renderHtml(spec) {
     border: 1px solid rgba(129,140,248,.35); }
   .takeaway-label { font-size: .85rem; font-weight: 700; letter-spacing: .14em; color: #5eead4; margin-bottom: .4rem; }
   .takeaway-text { font-size: 1.45rem; line-height: 1.4; font-weight: 600; }
-  footer { display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem; color: #6b7280;
-    border-top: 1px solid rgba(255,255,255,.08); padding-top: 1.25rem; }
-  footer strong { color: #e5e7eb; font-family: Outfit, sans-serif; font-size: 1.3rem; margin-right: .6rem; }
 </style></head>
 <body><div class="canvas">
   <header>
@@ -196,9 +190,7 @@ export function renderHtml(spec) {
     <p class="subtitle">${esc(spec.subtitle)}</p>
   </header>
   <main>${RENDERERS[spec.layout](spec)}</main>
-  <div class="takeaway"><div class="takeaway-label">KEY TAKEAWAY</div><div class="takeaway-text">${esc(spec.takeaway)}</div></div>
-  <footer><span><strong>${AUTHOR}</strong>${AUTHOR_ROLE}</span><span>Save this for later ↗</span></footer>
-</div></body></html>`;
+  <div class="takeaway"><div class="takeaway-label">KEY TAKEAWAY</div><div class="takeaway-text">${esc(spec.takeaway)}</div></div></div></body></html>`;
 }
 
 // Screenshots the page with Playwright, shrinking the type until everything fits the canvas

@@ -21,8 +21,8 @@ export default function Visuals() {
     <section id="visuals">
       <h2 className="section-title">System Design, Visualized</h2>
       <p className="section-subtitle">
-        Lessons from building RAG pipelines, multi-agent workflows, Spark ETL and Python backends, each explained in a
-        single picture. A new one every two weeks.
+        Architecture, scaling and lessons from real projects (event streaming, async systems, data pipelines and AI),
+        each explained in a single picture. New ones every Tuesday and Thursday.
       </p>
 
       <div className="visuals-grid">

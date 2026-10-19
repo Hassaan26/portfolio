@@ -1,7 +1,9 @@
-name: Generate Biweekly System Design Visual
+name: Generate Twice-Weekly System Design Visual
 on:
   schedule:
-    - cron: '0 0 1,15 * *'
+    # Tuesday and Thursday 13:00 UTC = 9 AM US Eastern, 2 PM UK, 5 PM Gulf, 6 PM Pakistan.
+    # (GitHub may start scheduled runs some minutes late under load.)
+    - cron: '0 13 * * 2,4'
   workflow_dispatch:
     inputs:
       post_only:
@@ -13,11 +15,21 @@ on:
         type: boolean
         default: false
       theme:
-        description: 'Experience theme to use (blank = automatic rotation)'
+        description: 'Theme to use (blank = automatic rotation: 2 architecture posts, then 1 experience post)'
         type: choice
         default: ''
         options:
           - ''
+          # architecture pillar
+          - messaging
+          - async-concurrency
+          - scaling
+          - distributed-data
+          - resilience
+          - architecture-decisions
+          - databases-at-scale
+          - ai-architecture
+          # experience pillar (from the resume)
           - rag
           - agents
           - spark-etl
@@ -68,7 +80,7 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add src/data/visuals.json public/visuals
-          git diff --staged --quiet || (git commit -m 'chore: auto-generate biweekly system design visual' && git pull --rebase origin main && git push)
+          git diff --staged --quiet || (git commit -m 'chore: auto-generate system design visual' && git pull --rebase origin main && git push)
 
       - name: Share on LinkedIn
         if: ${{ !inputs.dry_run }}
