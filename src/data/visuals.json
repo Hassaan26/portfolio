@@ -1,5 +1,34 @@
 [
   {
+    "id": 2,
+    "theme": "async-concurrency",
+    "pillar": "architecture",
+    "topic": "Python Concurrency Models",
+    "title": "Concurrency: Choose Wisely",
+    "subtitle": "Deciding between threads, processes, and asyncio for your Python backend workload impacts performance and reliability.",
+    "takeaway": "Match your concurrency model to the workload type (I/O-bound vs CPU-bound) to unlock true performance.",
+    "image": "/visuals/2026-10-20-python-concurrency-models.png",
+    "date": "2026-10-20",
+    "post": {
+      "hook": "Python backend feeling sluggish? The bottleneck might be how you're handling concurrent tasks.",
+      "context": "Getting concurrency right is crucial for scaling backend services, especially in Python where the GIL often dictates the rules. When I'm building FastAPI services or optimizing data pipelines with PySpark on AWS EMR, choosing the right approach for I/O-bound database queries (e.g., PostgreSQL, MongoDB) or CPU-heavy transformations is always a key design decision.",
+      "points": [
+        "Don't use threads for CPU-bound tasks in Python; the GIL will serialize them.",
+        "Leverage multiprocessing for true CPU parallelism across cores.",
+        "asyncio shines when you have thousands of concurrent I/O waits, like network requests or database calls.",
+        "Mix and match: asyncio for the web server, then offload CPU-heavy work to a ProcessPoolExecutor."
+      ],
+      "question": "How do you typically identify if a Python bottleneck is CPU-bound or I/O-bound in your services?",
+      "hashtags": [
+        "#Python",
+        "#Concurrency",
+        "#SystemDesign",
+        "#SoftwareArchitecture",
+        "#Backend"
+      ]
+    }
+  },
+  {
     "id": 1,
     "theme": "messaging",
     "pillar": "architecture",
