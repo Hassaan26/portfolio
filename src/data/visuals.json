@@ -1,1 +1,31 @@
-[]
+[
+  {
+    "id": 1,
+    "theme": "messaging",
+    "pillar": "architecture",
+    "topic": "Kafka vs RabbitMQ vs SQS",
+    "title": "Event Stream or Message Queue?",
+    "subtitle": "Deciding between Kafka, RabbitMQ, and SQS for reliable asynchronous communication.",
+    "takeaway": "Choose based on ordering, retention, and complexity. Don't over-engineer for simple queues.",
+    "image": "/visuals/2026-10-20-kafka-vs-rabbitmq-vs-sqs.png",
+    "date": "2026-10-20",
+    "post": {
+      "hook": "Choosing the right messaging system isn't just a technical decision; it's a strategic one for system reliability.",
+      "context": "Teams often default to the 'latest trend' or what's familiar, but picking the wrong tool leads to complex workarounds and hidden costs. When I'm designing highly concurrent Python services with FastAPI or building Scala ETL pipelines on EMR, the choice here directly impacts scalability and maintainability.",
+      "points": [
+        "Kafka excels for high-volume data streams where message order within a partition and replayability are key.",
+        "RabbitMQ offers robust routing and delivery guarantees, ideal for task queues and inter-service communication where flexible message handling matters.",
+        "SQS is hard to beat for simplicity and cost-effectiveness when you need a basic queue and are already in AWS.",
+        "Consider latency requirements: Kafka typically offers lower end-to-end latency for streaming compared to queueing for individual tasks."
+      ],
+      "question": "How do you evaluate and choose between these systems in your projects, especially when balancing performance with operational overhead?",
+      "hashtags": [
+        "#SystemDesign",
+        "#SoftwareArchitecture",
+        "#Messaging",
+        "#EventStreaming",
+        "#AWS"
+      ]
+    }
+  }
+]
