@@ -1,5 +1,34 @@
 [
   {
+    "id": 3,
+    "theme": "rag",
+    "pillar": "experience",
+    "topic": "Chunking Strategies for RAG",
+    "title": "RAG Chunking Trade-offs",
+    "subtitle": "Choosing how to break down documents impacts retrieval quality and context for your LLM. It's not one-size-fits-all.",
+    "takeaway": "Effective chunking optimizes context, reducing hallucinations and improving answer relevance for your RAG pipeline.",
+    "image": "/visuals/2026-10-22-chunking-strategies-for-rag.png",
+    "date": "2026-10-22",
+    "post": {
+      "hook": "The biggest challenge in RAG isn't just vector search, it's getting the right context into those vectors.",
+      "context": "When I designed and built our RAG pipeline for large document sets, choosing the right chunking strategy was critical. Incorrect chunking leads to irrelevant context, which means your LLM either hallucinates or provides vague answers.",
+      "points": [
+        "Start with fixed-size + overlap for simplicity, then iterate based on retrieval performance.",
+        "For complex documents (reports, manuals), structure-aware chunking is often worth the extra effort.",
+        "Monitor retrieval metrics (like recall@k) to understand if your chunking strategy is effective.",
+        "Don't forget metadata: chunking metadata (e.g., page number, section title) improves post-retrieval filtering."
+      ],
+      "question": "What chunking strategies have you found most effective for your RAG applications, and what trade-offs did you encounter?",
+      "hashtags": [
+        "#RAG",
+        "#VectorDatabases",
+        "#LLMOps",
+        "#NLP",
+        "#SystemDesign"
+      ]
+    }
+  },
+  {
     "id": 2,
     "theme": "async-concurrency",
     "pillar": "architecture",
