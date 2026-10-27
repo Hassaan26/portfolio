@@ -1,5 +1,30 @@
 [
   {
+    "id": 4,
+    "theme": "scaling",
+    "pillar": "architecture",
+    "topic": "L4 vs L7 Load Balancing",
+    "title": "Load Balancer: L4 vs L7",
+    "subtitle": "Choosing the right load balancing layer impacts performance, flexibility, and security of your web applications.",
+    "takeaway": "Balance performance (L4) with advanced routing/security (L7) based on application complexity and traffic needs.",
+    "image": "/visuals/2026-10-27-l4-vs-l7-load-balancing.png",
+    "date": "2026-10-27",
+    "post": {
+      "hook": "Your load balancer choice is a silent architect for performance and flexibility. Get it wrong, and scale suffers.",
+      "context": "As systems grow, simple scaling isn't enough. Deciding between L4 and L7 load balancing is a critical early architectural choice that impacts how your application handles traffic, security, and future features. This directly relates to the system design work I do with teams.",
+      "points": [
+        "Use L4 for raw speed and simple TCP/UDP traffic distribution where application context is not needed. Think high-throughput streaming.",
+        "Choose L7 for web applications that need advanced routing, SSL termination, content modification, or Web Application Firewall (WAF) integration.",
+        "Consider the trade-off: L4 is faster but dumber; L7 is slower but smarter. Your choice affects latency, cost, and developer flexibility.",
+        "Modern cloud providers often blend these; understand the underlying principles to configure effectively."
+      ],
+      "question": "What's been your biggest challenge in load balancer configuration or troubleshooting, and how did you resolve it?",
+      "hashtags": [
+        "#SystemDesign_ #SoftwareArchitecture #LoadBalancing #ScalingWebApps #CloudEngineering"
+      ]
+    }
+  },
+  {
     "id": 3,
     "theme": "rag",
     "pillar": "experience",
