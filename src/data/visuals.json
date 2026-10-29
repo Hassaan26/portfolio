@@ -1,5 +1,35 @@
 [
   {
+    "id": 5,
+    "theme": "distributed-data",
+    "pillar": "architecture",
+    "topic": "Saga Pattern: Orchestration vs Choreography",
+    "title": "Saga Pattern: Choreography vs. Orchestration",
+    "subtitle": "Managing consistency across multiple services without a global transaction coordinator is a common distributed system challenge.",
+    "takeaway": "Choose orchestration for simpler central control; choreography for decentralized resilience, but mind complexity.",
+    "image": "/visuals/2026-10-29-saga-pattern-orchestration-vs-choreography.png",
+    "date": "2026-10-29",
+    "post": {
+      "hook": "Distributed transactions often fail. The Saga pattern helps, but how do you manage the workflow?",
+      "context": "Ensuring data consistency across multiple microservices without a single atomic transaction is a fundamental challenge in distributed systems. When building complex backend services with Django or FastAPI, teams frequently encounter this, especially with multi-step processes.",
+      "points": [
+        "Orchestration simplifies error handling logic through a central component.",
+        "Choreography is often preferred for truly decoupled microservices, using event queues.",
+        "Consider compensating transactions for failure scenarios to maintain consistency.",
+        "Monitoring is key: choreography requires robust distributed tracing.",
+        "The choice impacts deployment complexity and system resilience."
+      ],
+      "question": "Which Saga pattern approach have you found more practical for your microservices, and why?",
+      "hashtags": [
+        "#SystemDesign",
+        "#Microservices",
+        "#DistributedSystems",
+        "#SoftwareArchitecture",
+        "#SagaPattern"
+      ]
+    }
+  },
+  {
     "id": 4,
     "theme": "scaling",
     "pillar": "architecture",
