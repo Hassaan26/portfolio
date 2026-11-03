@@ -1,5 +1,34 @@
 [
   {
+    "id": 6,
+    "theme": "agents",
+    "pillar": "experience",
+    "topic": "Multi-Agent API Patterns",
+    "title": "LLM Workflows: Sync vs Async",
+    "subtitle": "Choosing the right API pattern is critical when exposing long-running multi-agent LLM workflows to users.",
+    "takeaway": "For multi-agent LLM workflows, favor async background tasks or streaming for user experience and API reliability.",
+    "image": "/visuals/2026-11-03-multi-agent-api-patterns.png",
+    "date": "2026-11-03",
+    "post": {
+      "hook": "Multi-agent LLM workflows are powerful, but exposing them via an API? That's where things get tricky with latency.",
+      "context": "When I developed a FastAPI application to orchestrate multi-agent workflows with CrewAI, the biggest challenge was handling the varying execution times. A simple synchronous request wasn't going to cut it for a process that could take minutes.",
+      "points": [
+        "Synchronous APIs block. If your agent workflow takes more than a few seconds, it's a guaranteed timeout for the user and an unresponsive server.",
+        "Background tasks (like with Celery/RQ or `asyncio.create_task`) decouple the request from the response. Provide a job ID, let the client poll.",
+        "Streaming offers the best UX for real-time agent progress. It keeps the user engaged by showing partial results as they happen, masking overall latency.",
+        "Consider the downstream client: does it need the full result instantly, or can it handle incremental updates or polling? This often drives the decision."
+      ],
+      "question": "What patterns have you found most effective for presenting long-running AI model inferences via an API to end-users?",
+      "hashtags": [
+        "#LLM",
+        "#API",
+        "#SystemDesign",
+        "#FastAPI",
+        "#CrewAI"
+      ]
+    }
+  },
+  {
     "id": 5,
     "theme": "distributed-data",
     "pillar": "architecture",
