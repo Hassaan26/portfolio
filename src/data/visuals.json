@@ -1,5 +1,34 @@
 [
   {
+    "id": 7,
+    "theme": "resilience",
+    "pillar": "architecture",
+    "topic": "Circuit Breaker Pattern",
+    "title": "Circuit Breaker: Isolate Failures",
+    "subtitle": "Prevent cascading failures by stopping requests to unhealthy services, allowing them to recover gracefully.",
+    "takeaway": "Know when to implement Circuit Breakers and tune them carefully to protect your services from cascading outages.",
+    "image": "/visuals/2026-11-05-circuit-breaker-pattern.png",
+    "date": "2026-11-05",
+    "post": {
+      "hook": "Relying on retries alone? You're setting yourself up for a cascading failure when a dependency struggles.",
+      "context": "When a critical service dependency becomes unavailable, naive retries often amplify the problem, turning a hiccup into an outage. This is a common challenge I see when designing robust Python services with FastAPI or managing distributed data pipelines on AWS EMR.",
+      "points": [
+        "Use it to protect services from transient dependency failures, not expected business logic errors.",
+        "Careful tuning of thresholds (error rate, timeout) is paramount. Overly aggressive settings lead to false trips; too lenient, and you're still slow to recover.",
+        "Combine with retries and exponential backoff *after* the circuit breaker to handle transient issues once the circuit is closed again.",
+        "Monitoring the circuit's state is non-negotiable. An open circuit needs investigation and alerts."
+      ],
+      "question": "What's your preferred approach for monitoring circuit breaker states in production and ensuring optimal tuning?",
+      "hashtags": [
+        "#SystemDesign",
+        "#SoftwareArchitecture",
+        "#ResilienceEngineering",
+        "#Microservices",
+        "#Reliability"
+      ]
+    }
+  },
+  {
     "id": 6,
     "theme": "agents",
     "pillar": "experience",
