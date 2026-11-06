@@ -125,6 +125,7 @@ const EXPERIENCE_THEMES = [
   {
     id: 'testing',
     pillar: 'experience',
+    rotate: false,
     area: 'Testing strategy: Pytest, TDD and BDD',
     experience:
       'Authored unit and integration tests with Pytest and BDD frameworks, raising coverage and reducing production defects; built automated BDD suites since early in his career.',
@@ -140,6 +141,7 @@ const EXPERIENCE_THEMES = [
   {
     id: 'remote-delivery',
     pillar: 'experience',
+    rotate: false,
     area: 'Remote delivery for US clients across time zones',
     experience:
       'Works remotely from Pakistan (UTC+5) with US-based client stakeholders across time zones, using async communication (Jira, Confluence) to align on scope, priorities and delivery timelines; translates business requirements into technical solutions.',
@@ -287,6 +289,40 @@ const ARCHITECTURE_THEMES = [
       'Evaluating LLM features in production: offline evals vs online signals',
       'Streaming LLM responses through an API (SSE) and handling disconnects',
       'Guardrails: validating and constraining LLM output before acting on it',
+    ],
+  },
+  {
+    id: 'api-performance',
+    pillar: 'architecture',
+    area: 'API performance and latency',
+    focus: 'Making APIs fast and keeping them fast under load: where the time goes and what actually fixes it.',
+    angles: [
+      'p50 vs p95 vs p99 latency: why averages hide the slow requests users feel',
+      'Where API latency actually goes: network, serialization, DB, downstream calls',
+      'HTTP caching for APIs: Cache-Control, ETags and conditional requests',
+      'Payload size: field selection, compression (gzip/brotli) and over-fetching',
+      'Fan-out calls: running downstream requests concurrently instead of in sequence',
+      'Connection reuse: keep-alive, HTTP/2 and client connection pools',
+      'Moving slow work off the request path: 202 Accepted plus a job status endpoint',
+      'Serialization cost in Python APIs (Pydantic v2, orjson) and when it matters',
+      'Load testing an API properly: realistic traffic, warm-up, and reading the results',
+      'Tail latency amplification in microservices and hedged requests',
+    ],
+  },
+  {
+    id: 'llm-apps',
+    pillar: 'architecture',
+    area: 'AI application architecture: LLM apps and agents',
+    focus: 'Design decisions for LLM-powered products and agents (connects to his real RAG and CrewAI work).',
+    angles: [
+      'Agent architectures: single agent with tools vs multi-agent vs fixed workflow',
+      'Tool calling design: small, well-described tools and safe side effects',
+      'Prompt caching and token budgets: cutting LLM cost and latency',
+      'Model routing: sending easy requests to small models and hard ones to large models',
+      'Memory for agents: conversation history vs summaries vs retrieval',
+      'Structured output from LLMs: JSON schemas, validation and repair',
+      'Long-running AI jobs: queues, progress updates and resumable steps',
+      'Observability for LLM apps: tracing prompts, tool calls, tokens and cost',
     ],
   },
 ];

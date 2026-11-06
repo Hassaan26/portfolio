@@ -29,6 +29,8 @@ on:
           - architecture-decisions
           - databases-at-scale
           - ai-architecture
+          - api-performance
+          - llm-apps
           # experience pillar (from the resume)
           - rag
           - agents

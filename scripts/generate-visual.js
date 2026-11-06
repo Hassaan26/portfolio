@@ -22,7 +22,8 @@ export function pickTheme(visuals, override = process.env.THEME?.trim()) {
     return theme;
   }
   const pillar = PILLAR_PATTERN[visuals.length % PILLAR_PATTERN.length];
-  const candidates = THEMES.filter(t => t.pillar === pillar);
+  // Themes marked rotate: false are off the main topics; they can still be picked via THEME.
+  const candidates = THEMES.filter(t => t.pillar === pillar && t.rotate !== false);
   // visuals is newest-first, so the first index a theme appears at is its recency (lower = more recent)
   const lastUsed = theme => {
     const idx = visuals.findIndex(v => v.theme === theme.id);
