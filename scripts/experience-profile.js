@@ -1,4 +1,4 @@
-// Source of truth for what the twice-weekly LinkedIn visuals draw on.
+// Source of truth for what the weekly LinkedIn visuals draw on.
 // Two content pillars:
 //   - experience:   lessons from work on Hassaan's resume. The generator may only claim experience
 //                   that appears here, so keep it factual.

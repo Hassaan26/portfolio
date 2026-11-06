@@ -22,7 +22,7 @@ export default function Visuals() {
       <h2 className="section-title">System Design, Visualized</h2>
       <p className="section-subtitle">
         Architecture, scaling and lessons from real projects (event streaming, async systems, data pipelines and AI),
-        each explained in a single picture. New ones every Tuesday and Thursday.
+        each explained in a single picture. A new one every Tuesday.
       </p>
 
       <div className="visuals-grid">
@@ -68,14 +68,22 @@ export default function Visuals() {
             </div>
             <div className="modal-body">
               <img src={selectedVisual.image} alt={selectedVisual.title} className="visual-full" />
-              {selectedVisual.post.context && (
-                <p className="visual-context">{selectedVisual.post.context}</p>
+              {selectedVisual.post.text ? (
+                selectedVisual.post.text.split(/\n\s*\n/).map((para, idx) => (
+                  <p key={idx} className="visual-context" style={{ whiteSpace: 'pre-line' }}>{para}</p>
+                ))
+              ) : (
+                <>
+                  {selectedVisual.post.context && (
+                    <p className="visual-context">{selectedVisual.post.context}</p>
+                  )}
+                  <ul className="visual-points">
+                    {selectedVisual.post.points.map((point, idx) => (
+                      <li key={idx}>{point}</li>
+                    ))}
+                  </ul>
+                </>
               )}
-              <ul className="visual-points">
-                {selectedVisual.post.points.map((point, idx) => (
-                  <li key={idx}>{point}</li>
-                ))}
-              </ul>
               <p className="visual-takeaway">💡 {selectedVisual.takeaway}</p>
             </div>
           </div>

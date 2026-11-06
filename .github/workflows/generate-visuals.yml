@@ -1,9 +1,9 @@
-name: Generate Twice-Weekly System Design Visual
+name: Generate Weekly System Design Visual
 on:
   schedule:
-    # Tuesday and Thursday 13:00 UTC = 9 AM US Eastern, 2 PM UK, 5 PM Gulf, 6 PM Pakistan.
+    # Tuesday 13:00 UTC = 9 AM US Eastern, 2 PM UK, 5 PM Gulf, 6 PM Pakistan.
     # (GitHub may start scheduled runs some minutes late under load.)
-    - cron: '0 13 * * 2,4'
+    - cron: '0 13 * * 2'
   workflow_dispatch:
     inputs:
       post_only:

@@ -3,12 +3,14 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import { BRAND, PILLAR_PATTERN, PROFILE, THEMES } from './experience-profile.js';
 import { formatPost } from './format-post.js';
+import { findBannedPhrases, pickVariety, styleBrief } from './post-styles.js';
 import { LAYOUTS, NODE_KINDS, SEGMENT_KINDS, renderPng } from './visual-template.js';
 
 const VISUALS_PATH = path.resolve('src/data/visuals.json');
 const IMAGES_DIR = path.resolve('public/visuals');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const DRY_RUN = process.env.DRY_RUN === 'true';
+const MAX_POST_CHARS = 900;
 
 // 1) The pillar comes from PILLAR_PATTERN, cycling by how many visuals exist (2 architecture : 1 experience).
 // 2) Within the pillar, pick a theme never used, else the one used longest ago; ties keep THEMES order.
@@ -51,16 +53,18 @@ Pick ONE advanced concept from this area. Candidate angles (choose one, or a clo
 ${theme.angles.map(a => `- ${a}`).join('\n')}
 
 Pillar rules:
-- Write as a consultant advising an engineering team: when to use it, when NOT to, what it costs, how to decide. A decision guide beats a definition.
+- Write like an experienced engineer talking to a team: when to use it, when NOT to, what it costs, how to decide. A decision guide beats a definition.
 - Do NOT claim he has used a technology in production unless it appears in his profile above (e.g. no "when I ran Kafka at scale" unless Kafka is listed). Explaining and advising is fine.
 - You may connect the concept to his real experience only where it genuinely relates (e.g. async FastAPI services, Spark on EMR, RAG with Pinecone).`;
 }
 
-const LAYOUT_GUIDE = `Layouts (pick the one that explains the concept best):
+const LAYOUT_GUIDE = `Layouts:
 - "comparison": 2-3 side-by-side columns contrasting approaches. Fill "columns": each with name (1-3 words), tagline (max 60 chars), points (3-4 items, max 70 chars each), analogy (a real-world analogy, max 80 chars).
 - "architecture": components flowing top to bottom through 3-5 tiers. Fill "tiers": each tier has nodes (1-4 per tier; label max 20 chars, detail max 40 chars, kind one of ${NODE_KINDS.join(', ')}) and arrowLabel (max 45 chars, describes what flows from this tier to the next; empty for the last tier).
 - "timeline": how work is scheduled over time (great for concurrency, async, pipelining, retries). Fill "totalUnits" (8-16) and "timelines": 2-3 groups, each with name (max 25 chars), caption (max 60 chars), and 1-3 lanes (label max 14 chars, e.g. "Thread 1" or "Core 2"). Each lane has segments with integer start/end within 0..totalUnits, a short label (max 8 chars, e.g. "Task A") and kind one of ${SEGMENT_KINDS.join(', ')} ("wait" = blocked on I/O). Segments in a lane must not overlap.
-- "steps": a numbered sequence of 4-6 steps. Fill "steps": each with title (max 35 chars) and detail (max 110 chars).`;
+- "steps": a numbered sequence of 4-6 steps. Fill "steps": each with title (max 35 chars) and detail (max 110 chars).
+- "big-idea": one big statement and a few supporting lines; the simplest layout. Fill "statement" (max 90 chars) and "lines" (2-3 items, max 80 chars each).
+- "dos-donts": two plain lists. Fill "dos" and "donts" (3-4 items each, max 70 chars each).`;
 
 const SPEC_SCHEMA = {
   type: 'object',
@@ -147,17 +151,18 @@ const SPEC_SCHEMA = {
         required: ['title', 'detail'],
       },
     },
+    statement: { type: 'string' },
+    lines: { type: 'array', items: { type: 'string' } },
+    dos: { type: 'array', items: { type: 'string' } },
+    donts: { type: 'array', items: { type: 'string' } },
     takeaway: { type: 'string' },
     post: {
       type: 'object',
       properties: {
-        hook: { type: 'string' },
-        context: { type: 'string' },
-        points: { type: 'array', items: { type: 'string' } },
-        question: { type: 'string' },
+        text: { type: 'string' },
         hashtags: { type: 'array', items: { type: 'string' } },
       },
-      required: ['hook', 'context', 'points', 'question', 'hashtags'],
+      required: ['text', 'hashtags'],
     },
   },
   required: ['topic', 'title', 'subtitle', 'layout', 'takeaway', 'post'],
@@ -249,12 +254,47 @@ function validateSpec(spec) {
   if (spec.layout === 'steps') {
     if (!spec.steps || spec.steps.length < 3 || spec.steps.length > 6) problems.push('steps needs 3-6 steps');
   }
-  if (!spec.post.points || spec.post.points.length < 2) problems.push('post needs at least 2 points');
+  if (spec.layout === 'big-idea') {
+    if (!spec.statement) problems.push('big-idea needs a statement');
+    if (!spec.lines || spec.lines.length < 2 || spec.lines.length > 3) problems.push('big-idea needs 2-3 lines');
+  }
+  if (spec.layout === 'dos-donts') {
+    if (!spec.dos || spec.dos.length < 3 || spec.dos.length > 4) problems.push('dos-donts needs 3-4 dos');
+    if (!spec.donts || spec.donts.length < 3 || spec.donts.length > 4) problems.push('dos-donts needs 3-4 donts');
+  }
+  const text = spec.post.text || '';
+  if (text.length < 120) problems.push('post.text is too short');
+  if (text.length > MAX_POST_CHARS) problems.push(`post.text is ${text.length} chars; keep it under ${MAX_POST_CHARS}`);
+  if (/#\w/.test(text)) problems.push('put hashtags only in post.hashtags, not in post.text');
+  const banned = findBannedPhrases([text, spec.title, spec.subtitle, spec.takeaway].join(' '));
+  if (banned.length) problems.push(`remove these phrases, they sound machine-written: ${banned.map(p => `"${p}"`).join(', ')}`);
   return problems;
 }
 
-export function buildPrompt(coveredTopics, theme) {
-  return `You are writing as Hassaan Riaz. Twice a week he posts ONE visual explainer on LinkedIn. The goal is to build his personal brand as a software consultant: engineering leaders and CTOs who might hire him should come away thinking "this person knows how to design and scale systems".
+function postBrief(variety) {
+  const hashtags = variety.hashtagCount === 0
+    ? 'post.hashtags: return an empty array this time.'
+    : `post.hashtags: exactly ${variety.hashtagCount}, specific to the topic (e.g. #ApacheKafka, #PostgreSQL), each starting with #.`;
+  return `Also write the LinkedIn post that goes with the image, as plain text in post.text.
+
+This week's post style: ${styleBrief(variety.postStyle)}
+
+How it should read:
+- Like a senior engineer typing a quick post between meetings. Simple, direct, to the point. Short sentences, everyday words.
+- Under ${MAX_POST_CHARS} characters. Shorter is better; the image carries the detail, so don't repeat it.
+- The first line has to work on its own (it's all people see before "...see more"). Make it a plain, specific statement, not a teaser or a cliffhanger.
+- No emoji, no arrows (→), no bold, no "Key takeaway:" labels, no em dashes. Separate paragraphs with a blank line.
+- Don't open with a question unless the style asks for it. Avoid "X isn't just Y, it's Z", and don't stack three adjectives.
+- Don't sound like a course or a consultant's pitch. Don't say "in this post", "here's why", "let's".
+- ${variety.endWithQuestion
+    ? 'End with one short, specific question to other engineers (not "Thoughts?" or "Agree?").'
+    : 'Do NOT end with a question or a call to action. Just stop when the point is made.'}
+- ${hashtags} Never put hashtags inside post.text.
+- Follow the honesty rules.`;
+}
+
+export function buildPrompt(coveredTopics, theme, variety) {
+  return `You are writing as Hassaan Riaz. Once a week he posts ONE visual explainer on LinkedIn. The goal is to build his personal brand as a software consultant: engineering leaders and CTOs who might hire him should come away thinking "this person knows how to design and scale systems".
 
 Brand positioning: ${BRAND.positioning}
 
@@ -270,31 +310,26 @@ Honesty rules (these matter more than anything else):
 - Do NOT invent numbers, metrics, percentages, benchmarks, team sizes, timelines, outages, incidents, client stories or anecdotes.
 - Only claim experience described in his profile. Never name clients or employers' customers, and never describe proprietary details.
 
-LinkedIn writing rules (for reach and credibility):
-- The hook must stop the scroll on its own: a sharp insight, a common mistake, or a counter-intuitive truth. No "In today's post" or "Let's talk about".
-- Short, scannable lines; plain English; no buzzword filler ("game-changer", "leverage synergies", "delve").
+Writing rules (image and post):
+- Plain English, simple words. No buzzwords or filler ("game-changer", "leverage", "robust", "seamless", "delve", "crucial").
 - No links in the post (they reduce reach).
 
-Create the content for a single 1080x1350 infographic.
+Create the content for a single 1080x1350 image. Keep it simple: fewer, clearer words beat more detail.
 - topic: the concept's canonical name.
-- title: punchy headline, max 45 characters.
-- subtitle: one sentence that frames the problem, max 110 characters.
-- takeaway: the one thing to remember, max 120 characters.
+- title: short, plain headline, max 45 characters. Say what it is, not a slogan.
+- subtitle: one short sentence that frames the problem, max 100 characters.
+- takeaway: the one thing to remember, max 110 characters, said the way you'd say it to a colleague.
 
 ${LAYOUT_GUIDE}
 
+This week, use the "${variety.layout}" layout unless it really cannot explain this concept; then pick the closest other one.
 Only fill the field(s) for the layout you choose. Be technically precise: senior engineers will read this, so no hand-waving or incorrect simplifications. Respect the character limits; text that is too long will not fit.
 
-Also write the LinkedIn post that accompanies the image:
-- post.hook: the first line, shown before "...see more" (max 120 chars, no hashtags, no emoji at the start).
-- post.context: 1-2 sentences (max 250 chars) on why this matters and when teams hit it. For the experience pillar, connect it to his work (e.g. "Building Scala ETL on EMR for large healthcare datasets, this is the first thing I check when a job slows down."). For the architecture pillar, frame the decision or failure mode teams face. Follow the honesty rules.
-- post.points: 3-5 short, practical points that complement (not repeat) the image.
-- post.question: one specific question that invites engineers and tech leads to share how they handle it.
-- post.hashtags: 3-5 relevant hashtags, each starting with #, mixing broad (#SystemDesign, #SoftwareArchitecture) and specific (#ApacheKafka).`;
+${postBrief(variety)}`;
 }
 
-async function generateSpec(coveredTopics, theme) {
-  const basePrompt = buildPrompt(coveredTopics, theme);
+async function generateSpec(coveredTopics, theme, variety) {
+  const basePrompt = buildPrompt(coveredTopics, theme, variety);
 
   let feedback = '';
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -318,16 +353,22 @@ async function main() {
     }
 
     const theme = pickTheme(visuals);
+    const variety = pickVariety(theme.pillar, visuals[0]);
     console.log(`Pillar: ${theme.pillar} | theme: ${theme.id} (${theme.area})`);
+    console.log(`Variety: ${JSON.stringify(variety)}`);
     console.log('Generating visual spec with Gemini...');
-    const spec = await generateSpec(visuals.map(v => v.topic), theme);
+    const spec = await generateSpec(visuals.map(v => v.topic), theme, variety);
     console.log(`Topic: "${spec.topic}" (layout: ${spec.layout})`);
     console.log(JSON.stringify(spec, null, 2));
 
     const date = new Date().toISOString().slice(0, 10);
     const fileName = `${date}-${slugify(spec.topic)}.png`;
     fs.mkdirSync(IMAGES_DIR, { recursive: true });
-    await renderPng(spec, path.join(IMAGES_DIR, fileName));
+    await renderPng(spec, path.join(IMAGES_DIR, fileName), {
+      look: variety.look,
+      chip: variety.chip === 'topic' ? spec.topic : variety.chip,
+      takeawayBox: variety.takeawayBox,
+    });
     console.log(`Rendered public/visuals/${fileName}`);
 
     const nextId = visuals.length > 0 ? Math.max(...visuals.map(v => v.id || 0)) + 1 : 1;
@@ -341,12 +382,12 @@ async function main() {
       takeaway: spec.takeaway,
       image: `/visuals/${fileName}`,
       date,
+      layout: spec.layout,
+      look: variety.look,
+      postStyle: variety.postStyle,
       post: {
-        hook: spec.post.hook,
-        context: spec.post.context,
-        points: spec.post.points.slice(0, 5),
-        question: spec.post.question,
-        hashtags: spec.post.hashtags.slice(0, 5).map(tag => tag.startsWith('#') ? tag : `#${tag}`),
+        text: spec.post.text.trim(),
+        hashtags: spec.post.hashtags.slice(0, variety.hashtagCount).map(tag => tag.startsWith('#') ? tag : `#${tag}`),
       },
     };
 
