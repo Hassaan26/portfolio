@@ -1,5 +1,23 @@
 [
   {
+    "id": 8,
+    "theme": "architecture-decisions",
+    "pillar": "architecture",
+    "topic": "Synchronous vs Asynchronous Communication",
+    "title": "Sync vs Async Service Calls",
+    "subtitle": "Choosing the right communication model impacts performance and resilience.",
+    "takeaway": "Async calls improve throughput and decouple services, but add complexity.",
+    "image": "/visuals/2026-11-16-synchronous-vs-asynchronous-communication.png",
+    "date": "2026-11-16",
+    "layout": "timeline",
+    "look": "chalk",
+    "postStyle": "rule-of-thumb",
+    "post": {
+      "text": "For high-throughput, decoupled systems, asynchronous communication often outperforms synchronous blocking calls.\n\nSynchronous calls are simpler for immediate, sequential operations and easier error handling. They're good for read-heavy APIs where a direct response is essential before proceeding. Asynchronous communication, like event-driven patterns, boosts scalability and resilience by letting callers continue work without waiting. However, it introduces complexity in state management, eventual consistency, and debugging distributed flows. Choosing depends on your data consistency needs, latency tolerance, and how much complexity your team can manage.\n\nWhen do you lean on sync vs async for critical paths in your services?",
+      "hashtags": []
+    }
+  },
+  {
     "id": 7,
     "theme": "resilience",
     "pillar": "architecture",
