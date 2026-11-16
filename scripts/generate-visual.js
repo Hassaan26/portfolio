@@ -227,8 +227,31 @@ function slugify(text) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 }
 
-// Returns a list of problems; an empty list means the spec can be rendered
-function validateSpec(spec) {
+// The top-level fields each layout needs. The schema sent to Gemini marks these as required,
+// because with optional fields Gemini sometimes returns the layout name but leaves its data out.
+const LAYOUT_FIELDS = {
+  comparison: ['columns'],
+  architecture: ['tiers'],
+  timeline: ['totalUnits', 'timelines'],
+  steps: ['steps'],
+  'big-idea': ['statement', 'lines'],
+  'dos-donts': ['dos', 'donts'],
+};
+
+// If the preferred layout keeps failing, try these next (the simpler ones fit almost any concept)
+const FALLBACK_LAYOUTS = ['comparison', 'dos-donts', 'steps', 'big-idea'];
+
+export function schemaFor(layout) {
+  const fieldsForOtherLayouts = Object.entries(LAYOUT_FIELDS)
+    .filter(([name]) => name !== layout)
+    .flatMap(([, fields]) => fields);
+  const properties = { ...SPEC_SCHEMA.properties, layout: { type: 'string', enum: [layout] } };
+  for (const field of fieldsForOtherLayouts) delete properties[field];
+  return { ...SPEC_SCHEMA, properties, required: [...SPEC_SCHEMA.required, ...LAYOUT_FIELDS[layout]] };
+}
+
+// Problems with the layout-specific data only
+function layoutProblems(spec) {
   const problems = [];
   if (spec.layout === 'comparison') {
     if (!spec.columns || spec.columns.length < 2 || spec.columns.length > 3) problems.push('comparison needs 2-3 columns');
@@ -244,7 +267,8 @@ function validateSpec(spec) {
     for (const group of spec.timelines || []) {
       if (!group.lanes || group.lanes.length < 1 || group.lanes.length > 4) problems.push(`"${group.name}" needs 1-4 lanes`);
       for (const lane of group.lanes || []) {
-        const sorted = [...lane.segments].sort((a, b) => a.start - b.start);
+        if (!lane.segments || lane.segments.length === 0) problems.push(`lane "${lane.label}" needs at least 1 segment`);
+        const sorted = [...(lane.segments || [])].sort((a, b) => a.start - b.start);
         sorted.forEach((seg, idx) => {
           if (seg.start < 0 || seg.end > spec.totalUnits || seg.end <= seg.start) problems.push(`segment "${seg.label}" in "${lane.label}" is out of range`);
           if (idx > 0 && seg.start < sorted[idx - 1].end) problems.push(`segments overlap in lane "${lane.label}"`);
@@ -263,7 +287,13 @@ function validateSpec(spec) {
     if (!spec.dos || spec.dos.length < 3 || spec.dos.length > 4) problems.push('dos-donts needs 3-4 dos');
     if (!spec.donts || spec.donts.length < 3 || spec.donts.length > 4) problems.push('dos-donts needs 3-4 donts');
   }
-  const text = spec.post.text || '';
+  return problems;
+}
+
+// Returns a list of problems; an empty list means the spec can be rendered
+export function validateSpec(spec) {
+  const problems = layoutProblems(spec);
+  const text = spec.post?.text || '';
   if (text.length < 120) problems.push('post.text is too short');
   if (text.length > MAX_POST_CHARS) problems.push(`post.text is ${text.length} chars; keep it under ${MAX_POST_CHARS}`);
   if (/#\w/.test(text)) problems.push('put hashtags only in post.hashtags, not in post.text');
@@ -323,27 +353,39 @@ Create the content for a single 1080x1350 image. Keep it simple: fewer, clearer 
 
 ${LAYOUT_GUIDE}
 
-This week, use the "${variety.layout}" layout unless it really cannot explain this concept; then pick the closest other one.
-Only fill the field(s) for the layout you choose. Be technically precise: senior engineers will read this, so no hand-waving or incorrect simplifications. Respect the character limits; text that is too long will not fit.
+This week, use the "${variety.layout}" layout, and pick a concept from the area above that this layout explains well. Fill every field the "${variety.layout}" layout needs. Be technically precise: senior engineers will read this, so no hand-waving or incorrect simplifications. Respect the character limits; text that is too long will not fit.
 
 ${postBrief(variety)}`;
 }
 
-async function generateSpec(coveredTopics, theme, variety) {
-  const basePrompt = buildPrompt(coveredTopics, theme, variety);
-
+export async function generateSpec(coveredTopics, theme, variety) {
+  const covered = coveredTopics.map(slugify);
+  const tried = [];
+  let layout = variety.layout;
   let feedback = '';
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const spec = await callGemini(basePrompt + feedback, SPEC_SCHEMA);
-    const covered = coveredTopics.map(slugify);
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const prompt = buildPrompt(coveredTopics, theme, { ...variety, layout }) + feedback;
+    const spec = await callGemini(prompt, schemaFor(layout));
     const problems = validateSpec(spec);
     if (covered.includes(slugify(spec.topic))) problems.push(`"${spec.topic}" was already covered; choose a different topic`);
     if (problems.length === 0) return spec;
 
-    console.warn(`Spec attempt ${attempt} rejected: ${problems.join('; ')}`);
+    console.warn(`Spec attempt ${attempt} (layout: ${layout}) rejected: ${problems.join('; ')}`);
     feedback = `\n\nYour previous answer was rejected for these reasons, fix them:\n${problems.map(p => `- ${p}`).join('\n')}`;
+
+    // A layout that fails twice in a row on its own data probably doesn't suit this topic: switch layouts
+    if (layoutProblems(spec).length > 0) {
+      tried.push(layout);
+      const failedTwice = tried.filter(name => name === layout).length >= 2;
+      const next = FALLBACK_LAYOUTS.find(name => !tried.includes(name));
+      if (failedTwice && next) {
+        console.warn(`Layout "${layout}" keeps failing; switching to "${next}".`);
+        layout = next;
+        feedback = '';
+      }
+    }
   }
-  throw new Error('Gemini could not produce a valid visual spec after 3 attempts.');
+  throw new Error('Gemini could not produce a valid visual spec after 4 attempts.');
 }
 
 async function main() {
